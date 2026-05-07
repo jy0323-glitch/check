@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오후 출석체크</title>
+    <title>진천고 2학년 출석체크</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -467,14 +467,14 @@
 <!-- ===== HOME ===== -->
 <div class="screen active" id="home">
     <div class="home-header">
-        <div class="school-badge">🏫 오후 자습 출석</div>
-        <h1>출석 체크<br><span>시간대 선택</span></h1>
+        <div class="school-badge">🏫 진천고등학교 2학년</div>
+        <h1>오후 출석<br><span>체크</span></h1>
         <p>해당 시간대 카드를 눌러 출석하세요</p>
     </div>
 
     <div class="sessions-grid">
         <!-- 1차 -->
-        <div class="session-card s1" id="card-1" onclick="openSession(1)">
+        <div class="session-card s1" id="card-1">
             <div class="done-overlay-text" id="done-1">✓ 완료</div>
             <div class="card-top">
                 <div class="card-left">
@@ -495,7 +495,7 @@
         </div>
 
         <!-- 2차 -->
-        <div class="session-card s2" id="card-2" onclick="openSession(2)">
+        <div class="session-card s2" id="card-2">
             <div class="done-overlay-text" id="done-2">✓ 완료</div>
             <div class="card-top">
                 <div class="card-left">
@@ -516,7 +516,7 @@
         </div>
 
         <!-- 3차 -->
-        <div class="session-card s3" id="card-3" onclick="openSession(3)">
+        <div class="session-card s3" id="card-3">
             <div class="done-overlay-text" id="done-3">✓ 완료</div>
             <div class="card-top">
                 <div class="card-left">
@@ -546,7 +546,7 @@
 <!-- ===== FORM SCREEN ===== -->
 <div class="screen" id="form-screen">
     <div class="form-header">
-        <div class="back-btn" onclick="goHome()">←</div>
+        <div class="back-btn" id="backBtn">←</div>
         <div class="form-header-info">
             <div class="session-label" id="form-session-label">1차 출석</div>
             <div class="session-name" id="form-session-name">16:30 ~ 18:00</div>
@@ -587,7 +587,7 @@
             </select>
         </div>
 
-        <button class="submit-btn s1" id="submitBtn" onclick="startCheckIn()">📍 위치 확인 후 제출</button>
+        <button class="submit-btn s1" id="submitBtn">📍 위치 확인 후 제출</button>
         <div id="message"></div>
     </div>
 </div>
@@ -597,7 +597,7 @@
     <div class="success-icon">✓</div>
     <div class="success-title">출석 완료!</div>
     <div class="success-detail" id="success-detail"></div>
-    <button class="return-btn" onclick="goHome()">← 홈으로 돌아가기</button>
+    <button class="return-btn" id="returnBtn">← 홈으로 돌아가기</button>
 </div>
 
 <script>
@@ -820,6 +820,28 @@
         msg.style.display = 'block';
         msg.textContent = text;
     }
+
+    // ── 모든 클릭 이벤트를 여기서 등록 (새탭 방지) ──
+    document.addEventListener('DOMContentLoaded', function() {
+        [1, 2, 3].forEach(function(s) {
+            document.getElementById('card-' + s).addEventListener('click', function(e) {
+                e.preventDefault();
+                openSession(s);
+            });
+        });
+        document.getElementById('backBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            goHome();
+        });
+        document.getElementById('submitBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            startCheckIn();
+        });
+        document.getElementById('returnBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            goHome();
+        });
+    });
 </script>
 </body>
 </html>
