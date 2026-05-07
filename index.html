@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>학교 통합 출석체크</title>
+    <title>오후 통합 출석체크</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 20px; background-color: #f4f7f6; }
         .container { background-color: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 450px; margin: 0 auto; }
         h2 { color: #333; margin-bottom: 10px; }
-        .info { font-size: 0.9em; color: #666; background: #eee; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: left; }
+        .info { font-size: 0.85em; color: #666; background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: left; border-left: 5px solid #ffc107; }
         input, select { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; }
-        button { background-color: #4CAF50; color: white; border: none; padding: 15px 30px; margin-top: 10px; font-size: 18px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
+        button { background-color: #007bff; color: white; border: none; padding: 15px 30px; margin-top: 10px; font-size: 18px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         button:disabled { background-color: #aaa; }
         #message { margin-top: 20px; font-weight: bold; line-height: 1.6; }
     </style>
@@ -18,36 +18,40 @@
 <body>
 
 <div class="container">
-    <h2>🏫 통합 출석 체크</h2>
+    <h2>📱 오후 출석 체크</h2>
     
     <div class="info">
-        • 오전: ~08:20 (이후 지각)<br>
-        • 오후 1차: 16:30 ~ 18:00<br>
-        • 오후 2차: 19:00 ~ 20:30<br>
-        • 오후 3차: 20:40 ~ 21:30
+        <b>[출석 체크 시간]</b><br>
+        • 1차: 16:30 ~ 18:00<br>
+        • 2차: 19:00 ~ 20:30<br>
+        • 3차: 20:40 ~ 21:30<br>
+        <small>* 출석 외(결석/학원 등)는 학교 밖에서도 제출 가능</small>
     </div>
     
     <input type="text" id="studentName" placeholder="학번과 이름 (예: 101 홍길동)">
     
     <select id="statusSelect">
-        <option value="출석">🟢 정상 출석 (학교 안)</option>
-        <option value="결석">🔴 결석/외출 (학교 밖)</option>
+        <option value="출석">🔵 정상 출석 (학교 안)</option>
+        <option value="결석">🔴 결석 (학교 밖)</option>
+        <option value="외출">🟠 외출 (학교 밖)</option>
+        <option value="학원">🟣 학원 (학교 밖)</option>
+        <option value="조퇴">⚫ 조퇴 (학교 밖)</option>
     </select>
 
-    <button id="checkBtn" onclick="startCheckIn()">출석체크 제출하기</button>
+    <button id="checkBtn" onclick="startCheckIn()">정보 제출하기</button>
     
     <div id="message"></div>
 </div>
 
 <script>
-    // ★★★ 1. 구글 웹 앱 URL (아까 복사한 것) ★★★
+    // ★★★ 1. 구글 웹 앱 URL을 넣으세요 ★★★
     const scriptUrl = "https://script.google.com/macros/s/AKfycbwdSqY4wOpDLRL0fTSk1OqpqwraZxk8pUZ3r1NPPuZzPGKR-Yk5Kh1JqUQksNsjEcyQ/exec";
 
-    // ★★★ 2. 학교 위도와 경도 ★★★
+    // ★★★ 2. 학교의 위도와 경도를 입력하세요 ★★★
     const SCHOOL_LAT = 36.850000; 
     const SCHOOL_LNG = 127.430000; 
     
-    const ALLOWED_RADIUS = 150; // 허용 반경 (미터)
+    const ALLOWED_RADIUS = 150; 
 
     function getDistance(lat1, lon1, lat2, lon2) {
         const R = 6371e3; 
@@ -68,7 +72,7 @@
             return;
         }
 
-        msgDiv.innerText = "GPS 확인 중...";
+        msgDiv.innerText = "위치 확인 중...";
         btn.disabled = true;
 
         if (navigator.geolocation) {
@@ -77,16 +81,17 @@
                 const lng = pos.coords.longitude;
                 const dist = getDistance(SCHOOL_LAT, SCHOOL_LNG, lat, lng);
 
-                // '출석'인데 학교 밖이면 거절
+                // '출석'을 선택했는데 학교 밖(150m 이상)인 경우만 차단
                 if (userType === "출석" && dist > ALLOWED_RADIUS) {
                     msgDiv.style.color = "red";
-                    msgDiv.innerText = `학교 밖입니다! (약 ${Math.round(dist)}m)\n교실 안에서 다시 시도하세요.`;
+                    msgDiv.innerText = `학교 위치를 벗어났습니다! (약 ${Math.round(dist)}m)\n출석 체크는 학교 안에서만 가능합니다.`;
                     btn.disabled = false;
                 } else {
                     processTimeAndSend(nameInput, userType, lat, lng);
                 }
             }, function() {
-                msgDiv.innerText = "GPS 권한을 허용해주세요.";
+                msgDiv.style.color = "red";
+                msgDiv.innerText = "GPS 권한을 허용해 주세요. (브라우저 설정)";
                 btn.disabled = false;
             }, {enableHighAccuracy: true});
         }
@@ -96,36 +101,31 @@
         const now = new Date();
         const hour = now.getHours();
         const min = now.getMinutes();
-        const currentTime = hour * 60 + min; // 현재 시간을 분으로 환산
+        const currentTime = hour * 60 + min;
 
-        let finalStatus = "";
+        let timeLabel = "";
 
-        // 시간대 판별 로직
-        if (userType === "결석") {
-            finalStatus = "결석/외출 처리";
+        // 시간대 판별 (오전 제외, 오후 3타임만)
+        if (currentTime >= (16 * 60 + 30) && currentTime <= (18 * 60)) {
+            timeLabel = "오후 1차";
+        } else if (currentTime >= (19 * 60) && currentTime <= (20 * 60 + 30)) {
+            timeLabel = "오후 2차";
+        } else if (currentTime >= (20 * 60 + 40) && currentTime <= (21 * 60 + 30)) {
+            timeLabel = "오후 3차";
         } else {
-            // 오전: ~08:20
-            if (currentTime <= (8 * 60 + 20)) finalStatus = "오전 정상출석";
-            else if (currentTime < (16 * 60 + 30)) finalStatus = "오전 지각";
-            
-            // 오후 1차: 16:30 ~ 18:00
-            else if (currentTime >= (16 * 60 + 30) && currentTime <= (18 * 60)) finalStatus = "오후 1차 출석";
-            
-            // 오후 2차: 19:00 ~ 20:30
-            else if (currentTime >= (19 * 60) && currentTime <= (20 * 60 + 30)) finalStatus = "오후 2차 출석";
-            
-            // 오후 3차: 20:40 ~ 21:30
-            else if (currentTime >= (20 * 60 + 40) && currentTime <= (21 * 60 + 30)) finalStatus = "오후 3차 출석";
-            
-            else finalStatus = "시간 외 제출 (" + hour + ":" + min + ")";
+            timeLabel = "시간 외";
         }
 
+        const finalStatus = `${timeLabel} - ${userType}`;
         const url = `${scriptUrl}?name=${encodeURIComponent(name)}&status=${encodeURIComponent(finalStatus)}&lat=${lat}&lng=${lng}`;
 
         fetch(url, { mode: 'no-cors' }).then(() => {
             document.getElementById("message").style.color = "green";
-            document.getElementById("message").innerText = `[${finalStatus}]\n제출 완료되었습니다!`;
-            document.getElementById("checkBtn").innerText = "제출 성공";
+            document.getElementById("message").innerText = `[${finalStatus}]\n제출되었습니다.`;
+            document.getElementById("checkBtn").innerText = "제출 완료";
+        }).catch(() => {
+            alert("전송 오류가 발생했습니다.");
+            document.getElementById("checkBtn").disabled = false;
         });
     }
 </script>
