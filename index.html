@@ -618,7 +618,18 @@
 
     let currentSession = 1;
 
-    // ── 로컬 완료 기록 (날짜별 리셋) ──
+    // ── 기기 고유 ID (최초 접속 시 생성, 영구 보관) ──
+    function getDeviceId() {
+        let id = localStorage.getItem('device_id');
+        if (!id) {
+            id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+            localStorage.setItem('device_id', id);
+        }
+        return id;
+    }
+    getDeviceId(); // 최초 접속 시 ID 생성
+
+    // ── 로컬 완료 기록 (날짜별 리셋, 기기당 차수별 1회만) ──
     function todayKey() {
         const d = new Date();
         return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
@@ -627,15 +638,22 @@
     function isDone(session) {
         try {
             const data = JSON.parse(localStorage.getItem('attendance_done') || '{}');
-            return data[todayKey()]?.[SESSIONS[session].key] === true;
+            return data[todayKey()]?.[SESSIONS[session].key] !== undefined;
         } catch { return false; }
     }
 
-    function markDone(session) {
+    function getDoneName(session) {
+        try {
+            const data = JSON.parse(localStorage.getItem('attendance_done') || '{}');
+            return data[todayKey()]?.[SESSIONS[session].key] || '';
+        } catch { return ''; }
+    }
+
+    function markDone(session, studentName) {
         try {
             const data = JSON.parse(localStorage.getItem('attendance_done') || '{}');
             if (!data[todayKey()]) data[todayKey()] = {};
-            data[todayKey()][SESSIONS[session].key] = true;
+            data[todayKey()][SESSIONS[session].key] = studentName;
             localStorage.setItem('attendance_done', JSON.stringify(data));
         } catch {}
     }
@@ -757,7 +775,8 @@
         if (!stdName)             { showMsg('error', '이름을 입력해주세요!'); return; }
 
         if (isDone(currentSession)) {
-            showMsg('error', '이미 이 시간대 출석을 제출했습니다.');
+            const doneName = getDoneName(currentSession);
+            showMsg('error', `이 기기에서 이미 ${doneName} 학생의 ${SESSIONS[currentSession].label} 출석이 제출되었습니다.\n대리 출석은 불가합니다.`);
             return;
         }
 
@@ -797,7 +816,7 @@
 
         fetch(url, { mode: 'no-cors' })
             .then(() => {
-                markDone(currentSession);
+                markDone(currentSession, stdName);
 
                 // 성공 화면 설정
                 document.getElementById('success-detail').innerHTML =
