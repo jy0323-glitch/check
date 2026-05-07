@@ -9,12 +9,9 @@
         .container { background-color: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 450px; margin: 0 auto; }
         h2 { color: #333; margin-bottom: 10px; }
         .info { font-size: 0.85em; color: #666; background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: left; border-left: 5px solid #ffc107; }
-        
         input, select { width: 100%; padding: 15px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; }
-        
         .input-group { display: flex; gap: 10px; }
         .input-group input { width: 50%; }
-
         button { background-color: #007bff; color: white; border: none; padding: 15px 30px; margin-top: 15px; font-size: 18px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         button:disabled { background-color: #aaa; }
         #message { margin-top: 20px; font-weight: bold; line-height: 1.6; }
@@ -35,14 +32,10 @@
     
     <select id="classSelect">
         <option value="">-- 반 선택 --</option>
-        <option value="1반">1반</option>
-        <option value="2반">2반</option>
-        <option value="3반">3반</option>
-        <option value="4반">4반</option>
-        <option value="5반">5반</option>
-        <option value="6반">6반</option>
-        <option value="7반">7반</option>
-        <option value="8반">8반</option>
+        <option value="1반">1반</option><option value="2반">2반</option>
+        <option value="3반">3반</option><option value="4반">4반</option>
+        <option value="5반">5반</option><option value="6반">6반</option>
+        <option value="7반">7반</option><option value="8반">8반</option>
     </select>
 
     <div class="input-group">
@@ -59,18 +52,16 @@
     </select>
 
     <button id="checkBtn" onclick="startCheckIn()">정보 제출하기</button>
-    
     <div id="message"></div>
 </div>
 
 <script>
-    // ★★★ 1. 구글 웹 앱 URL을 넣으세요 ★★★
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbwdSqY4wOpDLRL0fTSk1OqpqwraZxk8pUZ3r1NPPuZzPGKR-Yk5Kh1JqUQksNsjEcyQ/exec";
+    // ★ 1. 새 배포 후 받은 웹 앱 URL을 여기에 붙여넣으세요! ★
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbwNxdHzFaKHXQuH5WObQJRvTTQiSoTPrj3GEkdBbLrhamhVq10MdDElzvNf6s0vnL_T/exec";
 
-    // ★★★ 2. 학교의 위도와 경도를 입력하세요 ★★★
+    // ★ 2. 학교 좌표 (지도를 보고 정확히 넣어주세요) ★
     const SCHOOL_LAT = 36.850000; 
     const SCHOOL_LNG = 127.430000; 
-    
     const ALLOWED_RADIUS = 150; 
 
     function getDistance(lat1, lon1, lat2, lon2) {
@@ -89,81 +80,54 @@
         const msgDiv = document.getElementById("message");
         const btn = document.getElementById("checkBtn");
 
-        // 입력칸 확인 로직 (반, 5자리 학번, 이름 검사)
-        if (!classNum) {
-            alert("몇 반인지 선택해주세요!");
-            return;
-        }
-        if (stdId.length !== 5) {
-            alert("학번은 반드시 5자리 숫자로 입력해주세요! (예: 20101)");
-            return;
-        }
-        if (!stdName) {
-            alert("이름을 입력해주세요!");
-            return;
-        }
-
-        // 구글 시트로 보낼 완성된 이름 형태 (예: "1반 20101 홍길동")
-        const finalFullName = `${classNum} ${stdId} ${stdName}`;
+        if (!classNum) { alert("반을 선택해주세요!"); return; }
+        if (stdId.length !== 5) { alert("학번은 5자리 숫자로 입력해주세요!"); return; }
+        if (!stdName) { alert("이름을 입력해주세요!"); return; }
 
         msgDiv.innerText = "위치 확인 중...";
         btn.disabled = true;
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                const dist = getDistance(SCHOOL_LAT, SCHOOL_LNG, lat, lng);
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const dist = getDistance(SCHOOL_LAT, SCHOOL_LNG, lat, lng);
 
-                if (userType === "출석" && dist > ALLOWED_RADIUS) {
-                    msgDiv.style.color = "red";
-                    msgDiv.innerText = `학교 위치를 벗어났습니다! (약 ${Math.round(dist)}m)\n출석 체크는 학교 안에서만 가능합니다.`;
-                    btn.disabled = false;
-                } else {
-                    processTimeAndSend(finalFullName, userType, lat, lng);
-                }
-            }, function() {
+            if (userType === "출석" && dist > ALLOWED_RADIUS) {
                 msgDiv.style.color = "red";
-                msgDiv.innerText = "GPS 권한을 허용해 주세요. (브라우저 설정)";
+                msgDiv.innerText = `학교 위치를 벗어났습니다! (약 ${Math.round(dist)}m)`;
                 btn.disabled = false;
-            }, {enableHighAccuracy: true});
-        } else {
-            alert("이 기기는 GPS를 지원하지 않습니다.");
+            } else {
+                processTimeAndSend(classNum, `${stdId} ${stdName}`, userType, lat, lng);
+            }
+        }, function() {
+            msgDiv.style.color = "red";
+            msgDiv.innerText = "GPS 권한이 필요합니다.";
             btn.disabled = false;
-        }
+        }, {enableHighAccuracy: true});
     }
 
-    function processTimeAndSend(name, userType, lat, lng) {
+    function processTimeAndSend(classNum, name, userType, lat, lng) {
         const now = new Date();
         const hour = now.getHours();
         const min = now.getMinutes();
         const currentTime = hour * 60 + min;
+        let timeLabel = "시간 외";
 
-        let timeLabel = "";
-
-        if (currentTime >= (16 * 60 + 30) && currentTime <= (18 * 60)) {
-            timeLabel = "오후 1차";
-        } else if (currentTime >= (19 * 60) && currentTime <= (20 * 60 + 30)) {
-            timeLabel = "오후 2차";
-        } else if (currentTime >= (20 * 60 + 40) && currentTime <= (21 * 60 + 30)) {
-            timeLabel = "오후 3차";
-        } else {
-            timeLabel = "시간 외";
-        }
+        if (currentTime >= (16 * 60 + 30) && currentTime <= (18 * 60)) timeLabel = "오후 1차";
+        else if (currentTime >= (19 * 60) && currentTime <= (20 * 60 + 30)) timeLabel = "오후 2차";
+        else if (currentTime >= (20 * 60 + 40) && currentTime <= (21 * 60 + 30)) timeLabel = "오후 3차";
 
         const finalStatus = `${timeLabel} - ${userType}`;
-        const url = `${scriptUrl}?name=${encodeURIComponent(name)}&status=${encodeURIComponent(finalStatus)}&lat=${lat}&lng=${lng}`;
+        
+        // ★ 반(className) 파라미터를 추가로 보냅니다!
+        const url = `${scriptUrl}?className=${encodeURIComponent(classNum)}&name=${encodeURIComponent(name)}&status=${encodeURIComponent(finalStatus)}&lat=${lat}&lng=${lng}`;
 
         fetch(url, { mode: 'no-cors' }).then(() => {
             document.getElementById("message").style.color = "green";
-            document.getElementById("message").innerText = `[${finalStatus}]\n${name} 학생, 제출 완료되었습니다!`;
+            document.getElementById("message").innerText = `[${finalStatus}]\n${name} 학생 제출 완료!`;
             document.getElementById("checkBtn").innerText = "제출 완료";
-        }).catch(() => {
-            alert("전송 오류가 발생했습니다. 다시 시도해주세요.");
-            document.getElementById("checkBtn").disabled = false;
         });
     }
 </script>
-
 </body>
 </html>
