@@ -9,8 +9,13 @@
         .container { background-color: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 450px; margin: 0 auto; }
         h2 { color: #333; margin-bottom: 10px; }
         .info { font-size: 0.85em; color: #666; background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: left; border-left: 5px solid #ffc107; }
-        input, select { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; border: none; padding: 15px 30px; margin-top: 10px; font-size: 18px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
+        
+        input, select { width: 100%; padding: 15px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; }
+        
+        .input-group { display: flex; gap: 10px; }
+        .input-group input { width: 50%; }
+
+        button { background-color: #007bff; color: white; border: none; padding: 15px 30px; margin-top: 15px; font-size: 18px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         button:disabled { background-color: #aaa; }
         #message { margin-top: 20px; font-weight: bold; line-height: 1.6; }
     </style>
@@ -28,7 +33,22 @@
         <small>* 출석 외(결석/학원 등)는 학교 밖에서도 제출 가능</small>
     </div>
     
-    <input type="text" id="studentName" placeholder="학번과 이름 (예: 101 홍길동)">
+    <select id="classSelect">
+        <option value="">-- 반 선택 --</option>
+        <option value="1반">1반</option>
+        <option value="2반">2반</option>
+        <option value="3반">3반</option>
+        <option value="4반">4반</option>
+        <option value="5반">5반</option>
+        <option value="6반">6반</option>
+        <option value="7반">7반</option>
+        <option value="8반">8반</option>
+    </select>
+
+    <div class="input-group">
+        <input type="number" id="studentId" placeholder="학번 5자리" inputmode="numeric">
+        <input type="text" id="studentName" placeholder="이름">
+    </div>
     
     <select id="statusSelect">
         <option value="출석">🔵 정상 출석 (학교 안)</option>
@@ -62,15 +82,29 @@
     }
 
     function startCheckIn() {
-        const nameInput = document.getElementById("studentName").value.trim();
+        const classNum = document.getElementById("classSelect").value;
+        const stdId = document.getElementById("studentId").value.trim();
+        const stdName = document.getElementById("studentName").value.trim();
         const userType = document.getElementById("statusSelect").value;
         const msgDiv = document.getElementById("message");
         const btn = document.getElementById("checkBtn");
 
-        if (!nameInput) {
+        // 입력칸 확인 로직 (반, 5자리 학번, 이름 검사)
+        if (!classNum) {
+            alert("몇 반인지 선택해주세요!");
+            return;
+        }
+        if (stdId.length !== 5) {
+            alert("학번은 반드시 5자리 숫자로 입력해주세요! (예: 20101)");
+            return;
+        }
+        if (!stdName) {
             alert("이름을 입력해주세요!");
             return;
         }
+
+        // 구글 시트로 보낼 완성된 이름 형태 (예: "1반 20101 홍길동")
+        const finalFullName = `${classNum} ${stdId} ${stdName}`;
 
         msgDiv.innerText = "위치 확인 중...";
         btn.disabled = true;
@@ -81,19 +115,21 @@
                 const lng = pos.coords.longitude;
                 const dist = getDistance(SCHOOL_LAT, SCHOOL_LNG, lat, lng);
 
-                // '출석'을 선택했는데 학교 밖(150m 이상)인 경우만 차단
                 if (userType === "출석" && dist > ALLOWED_RADIUS) {
                     msgDiv.style.color = "red";
                     msgDiv.innerText = `학교 위치를 벗어났습니다! (약 ${Math.round(dist)}m)\n출석 체크는 학교 안에서만 가능합니다.`;
                     btn.disabled = false;
                 } else {
-                    processTimeAndSend(nameInput, userType, lat, lng);
+                    processTimeAndSend(finalFullName, userType, lat, lng);
                 }
             }, function() {
                 msgDiv.style.color = "red";
                 msgDiv.innerText = "GPS 권한을 허용해 주세요. (브라우저 설정)";
                 btn.disabled = false;
             }, {enableHighAccuracy: true});
+        } else {
+            alert("이 기기는 GPS를 지원하지 않습니다.");
+            btn.disabled = false;
         }
     }
 
@@ -105,7 +141,6 @@
 
         let timeLabel = "";
 
-        // 시간대 판별 (오전 제외, 오후 3타임만)
         if (currentTime >= (16 * 60 + 30) && currentTime <= (18 * 60)) {
             timeLabel = "오후 1차";
         } else if (currentTime >= (19 * 60) && currentTime <= (20 * 60 + 30)) {
@@ -121,10 +156,10 @@
 
         fetch(url, { mode: 'no-cors' }).then(() => {
             document.getElementById("message").style.color = "green";
-            document.getElementById("message").innerText = `[${finalStatus}]\n제출되었습니다.`;
+            document.getElementById("message").innerText = `[${finalStatus}]\n${name} 학생, 제출 완료되었습니다!`;
             document.getElementById("checkBtn").innerText = "제출 완료";
         }).catch(() => {
-            alert("전송 오류가 발생했습니다.");
+            alert("전송 오류가 발생했습니다. 다시 시도해주세요.");
             document.getElementById("checkBtn").disabled = false;
         });
     }
