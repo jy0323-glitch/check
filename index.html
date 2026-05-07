@@ -8,30 +8,59 @@
         body { font-family: 'Malgun Gothic', sans-serif; text-align: center; padding: 20px; background-color: #f4f7f6; }
         .container { background-color: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
         h2 { color: #333; }
-        input { width: 80%; padding: 15px; margin: 20px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; text-align: center; }
-        button { background-color: #4CAF50; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; width: 80%; font-weight: bold; }
+        input, select { width: 80%; padding: 15px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; border: none; padding: 15px 30px; margin-top: 10px; font-size: 18px; border-radius: 8px; cursor: pointer; width: 80%; font-weight: bold; }
         button:disabled { background-color: #aaa; }
-        #message { margin-top: 20px; font-weight: bold; color: #d32f2f; }
+        #message { margin-top: 20px; font-weight: bold; color: #d32f2f; line-height: 1.5; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>🏫 아침 출석 체크</h2>
-    <p>8시 20분 이전: <span style="color:blue;">정상 출석</span><br>8시 20분 이후: <span style="color:red;">지각</span></p>
     
-    <input type="text" id="studentName" placeholder="학번과 이름을 입력하세요 (예: 101 홍길동)">
-    <button id="checkBtn" onclick="startCheckIn()">출석하기</button>
+    <input type="text" id="studentName" placeholder="학번과 이름 (예: 101 홍길동)">
+    
+    <select id="statusSelect">
+        <option value="정상 출석">🟢 정상 출석 (학교 안)</option>
+        <option value="지각">🟡 지각 (학교 안)</option>
+        <option value="결석">🔴 결석 (집/병원 등)</option>
+    </select>
+
+    <button id="checkBtn" onclick="startCheckIn()">제출하기</button>
     
     <div id="message"></div>
 </div>
 
 <script>
-    // ★★★ 여기에 아까 구글 Apps Script에서 복사한 웹 앱 URL을 넣으세요 ★★★
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbwdSqY4wOpDLRL0fTSk1OqpqwraZxk8pUZ3r1NPPuZzPGKR-Yk5Kh1JqUQksNsjEcyQ/exec";
+    // ★★★ 1. 구글 Apps Script 웹 앱 URL을 넣으세요 ★★★
+    const scriptUrl = "여기에_복사한_웹앱_URL을_붙여넣으세요";
+
+    // ★★★ 2. 학교의 위도와 경도를 입력하세요 ★★★
+    const SCHOOL_LAT = 36.850000; // 학교 위도 (예시)
+    const SCHOOL_LNG = 127.430000; // 학교 경도 (예시)
+    
+    // ★★★ 3. 출석을 허용할 반경을 미터(m) 단위로 설정하세요 ★★★
+    const ALLOWED_RADIUS = 100; // 100m 이내에서만 출석/지각 가능
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; 
+        const radLat1 = lat1 * Math.PI / 180;
+        const radLat2 = lat2 * Math.PI / 180;
+        const deltaLat = (lat2 - lat1) * Math.PI / 180;
+        const deltaLng = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                  Math.cos(radLat1) * Math.cos(radLat2) *
+                  Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c; 
+    }
 
     function startCheckIn() {
         const nameInput = document.getElementById("studentName").value.trim();
+        const statusSelect = document.getElementById("statusSelect").value;
         const msgDiv = document.getElementById("message");
         const btn = document.getElementById("checkBtn");
 
@@ -40,22 +69,38 @@
             return;
         }
 
-        msgDiv.innerText = "GPS 위치를 확인 중입니다...\n(권한을 허용해 주세요)";
+        msgDiv.innerText = "위치를 확인 중입니다...\n(권한을 허용해 주세요)";
+        msgDiv.style.color = "#333";
         btn.disabled = true;
 
-        // GPS 위치 가져오기
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function(position) {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
-                    sendData(nameInput, lat, lng);
+                    
+                    // 결석을 선택한 경우: 위치 검사 없이 바로 통과 (어디서든 제출 가능)
+                    if (statusSelect === "결석") {
+                        sendData(nameInput, statusSelect, lat, lng);
+                    } 
+                    // 출석 또는 지각을 선택한 경우: 학교 100m 이내인지 검사
+                    else {
+                        const distance = getDistance(SCHOOL_LAT, SCHOOL_LNG, lat, lng);
+                        if (distance > ALLOWED_RADIUS) {
+                            msgDiv.style.color = "red";
+                            msgDiv.innerText = `학교 위치를 벗어났습니다!\n(현재 거리: 학교에서 약 ${Math.round(distance)}m)\n출석 및 지각 처리는 학교 안에서만 가능합니다.`;
+                            btn.disabled = false;
+                        } else {
+                            sendData(nameInput, statusSelect, lat, lng);
+                        }
+                    }
                 },
                 function(error) {
-                    msgDiv.innerText = "GPS 위치를 가져올 수 없습니다. 위치 권한을 켜주세요!";
+                    msgDiv.style.color = "red";
+                    msgDiv.innerText = "GPS 위치를 가져올 수 없습니다. 스마트폰의 위치(GPS) 권한을 켜주세요!";
                     btn.disabled = false;
                 },
-                { enableHighAccuracy: true }
+                { enableHighAccuracy: true } 
             );
         } else {
             msgDiv.innerText = "이 기기에서는 GPS를 지원하지 않습니다.";
@@ -63,32 +108,24 @@
         }
     }
 
-    function sendData(name, lat, lng) {
+    function sendData(name, status, lat, lng) {
         const msgDiv = document.getElementById("message");
         const btn = document.getElementById("checkBtn");
 
-        // 현재 시간 확인해서 지각 여부 판별 (8시 20분 기준)
-        const now = new Date();
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
-        
-        let status = "지각"; // 기본값은 지각
-        
-        // 8시 미만이거나, 8시이면서 20분 이하일 때만 정상 출석
-        if (hours < 8 || (hours === 8 && minutes <= 20)) {
-            status = "정상 출석";
-        }
-
-        // 구글 시트로 데이터 전송
+        // 사용자가 선택한 상태(status)를 그대로 구글 시트로 전송합니다.
         const finalUrl = `${scriptUrl}?name=${encodeURIComponent(name)}&status=${encodeURIComponent(status)}&lat=${lat}&lng=${lng}`;
 
         fetch(finalUrl, { mode: 'no-cors' })
             .then(() => {
-                msgDiv.style.color = status === "정상 출석" ? "green" : "red";
-                msgDiv.innerText = `${name} 학생, [${status}] 처리되었습니다!\n시간: ${hours}시 ${minutes}분`;
-                btn.innerText = "출석 완료";
+                if (status === "정상 출석") msgDiv.style.color = "green";
+                else if (status === "지각") msgDiv.style.color = "#b8860b"; // 짙은 노란색
+                else msgDiv.style.color = "red";
+                
+                msgDiv.innerText = `${name} 학생, [${status}] 제출이 완료되었습니다!`;
+                btn.innerText = "제출 완료";
             })
             .catch(err => {
+                msgDiv.style.color = "red";
                 msgDiv.innerText = "오류가 발생했습니다. 다시 시도해주세요.";
                 btn.disabled = false;
             });
