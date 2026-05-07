@@ -90,6 +90,14 @@
         navigator.geolocation.getCurrentPosition(function(pos) {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
+            const accuracy = pos.coords.accuracy;
+
+if (accuracy > 50) {
+    msgDiv.style.color = "red";
+    msgDiv.innerText = `GPS 정확도가 낮습니다. (오차 약 ${Math.round(accuracy)}m)\n운동장이나 창가에서 다시 시도하세요.`;
+    btn.disabled = false;
+    return;
+}
             const dist = getDistance(SCHOOL_LAT, SCHOOL_LNG, lat, lng);
 
             if (userType === "출석" && dist > ALLOWED_RADIUS) {
