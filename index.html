@@ -34,14 +34,14 @@
 
 <script>
     // ★★★ 1. 구글 Apps Script 웹 앱 URL을 넣으세요 ★★★
-    const scriptUrl = "여기에_복사한_웹앱_URL을_붙여넣으세요";
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbwdSqY4wOpDLRL0fTSk1OqpqwraZxk8pUZ3r1NPPuZzPGKR-Yk5Kh1JqUQksNsjEcyQ/exec";
 
     // ★★★ 2. 학교의 위도와 경도를 입력하세요 ★★★
     const SCHOOL_LAT = 36.850000; // 학교 위도 (예시)
     const SCHOOL_LNG = 127.430000; // 학교 경도 (예시)
     
     // ★★★ 3. 출석을 허용할 반경을 미터(m) 단위로 설정하세요 ★★★
-    const ALLOWED_RADIUS = 100; // 100m 이내에서만 출석/지각 가능
+    const ALLOWED_RADIUS = 300; // 100m 이내에서만 출석/지각 가능
 
     function getDistance(lat1, lon1, lat2, lon2) {
         const R = 6371e3; 
