@@ -821,26 +821,24 @@
         msg.textContent = text;
     }
 
-    // ── 모든 클릭 이벤트를 여기서 등록 (새탭 방지) ──
-    document.addEventListener('DOMContentLoaded', function() {
-        [1, 2, 3].forEach(function(s) {
-            document.getElementById('card-' + s).addEventListener('click', function(e) {
-                e.preventDefault();
-                openSession(s);
-            });
-        });
-        document.getElementById('backBtn').addEventListener('click', function(e) {
+    // ── 모든 클릭 이벤트 등록 (스크립트가 body 끝에 위치하므로 DOM 이미 준비됨) ──
+    [1, 2, 3].forEach(function(s) {
+        document.getElementById('card-' + s).addEventListener('click', function(e) {
             e.preventDefault();
-            goHome();
+            openSession(s);
         });
-        document.getElementById('submitBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            startCheckIn();
-        });
-        document.getElementById('returnBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            goHome();
-        });
+    });
+    document.getElementById('backBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        goHome();
+    });
+    document.getElementById('submitBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        startCheckIn();
+    });
+    document.getElementById('returnBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        goHome();
     });
 </script>
 </body>
