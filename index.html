@@ -610,10 +610,8 @@
     const ALLOWED_RADIUS = 500; // 500m로 확대
 
     // 세션 정보
-    // ★ 테스트 모드 ★
-    const now_test = new Date();
     const SESSIONS = {
-        1: { label: "1차 출석", time: "16:30 ~ 18:00", start: [now_test.getHours(), now_test.getMinutes()], end: [23,59], key: "done_1" },
+        1: { label: "1차 출석", time: "16:30 ~ 18:00", start: [16,30], end: [18,0], key: "done_1" },
         2: { label: "2차 출석", time: "19:00 ~ 20:30", start: [19,0], end: [20,30], key: "done_2" },
         3: { label: "3차 출석", time: "20:40 ~ 21:30", start: [20,40], end: [21,30], key: "done_3" },
     };
@@ -629,9 +627,7 @@
         }
         return id;
     }
-    getDeviceId();
-    // ★ 테스트 모드 - 완료기록 초기화 ★
-    localStorage.removeItem('attendance_done');
+    getDeviceId(); // 최초 접속 시 ID 생성
 
     // ── 로컬 완료 기록 (날짜별 리셋, 기기당 차수별 1회만) ──
     function todayKey() {
