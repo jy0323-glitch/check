@@ -567,8 +567,8 @@
 
         <div class="row-2">
             <div class="form-group">
-                <label>학번 (5자리)</label>
-                <input type="number" id="studentId" class="form-control" placeholder="12345" inputmode="numeric">
+                <label>번호</label>
+                <input type="number" id="studentId" class="form-control" placeholder="1" inputmode="numeric" min="1" max="50">
             </div>
             <div class="form-group">
                 <label>이름</label>
@@ -787,7 +787,7 @@
         const btn       = document.getElementById("submitBtn");
 
         if (!classNum)            { showMsg('error', '반을 선택해주세요!'); return; }
-        if (stdId.length !== 5)   { showMsg('error', '학번은 5자리로 입력해주세요!'); return; }
+        if (!stdId || isNaN(stdId) || stdId < 1) { showMsg('error', '번호를 입력해주세요!'); return; }
         if (!stdName)             { showMsg('error', '이름을 입력해주세요!'); return; }
 
         if (isDone(currentSession)) {
